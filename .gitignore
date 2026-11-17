@@ -1,0 +1,14 @@
+node_modules/
+dist/
+out/
+.env
+.env.*
+*.pem
+*.p12
+*.pfx
+*.key
+*.log
+.DS_Store
+*.bak
+*.tmp
+data.bin

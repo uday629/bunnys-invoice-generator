@@ -1,0 +1,87 @@
+{
+  "name": "bunnys-invoice-generator",
+  "version": "1.0.0",
+  "description": "Secure, offline invoice generator for freelancers and businesses. Made by Bunnys Framelab.",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win --x64",
+    "dist:mac": "electron-builder --mac --x64 --arm64",
+    "audit": "npm audit --omit=dev"
+  },
+  "author": {
+    "name": "Bunnys Framelab",
+    "url": "https://framelabmedia.odoo.com/"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^45.3.3",
+    "electron-builder": "^26.18.0",
+    "playwright-core": "^1.65.1"
+  },
+  "productName": "Bunnys Invoice Generator",
+  "homepage": "https://framelabmedia.odoo.com/",
+  "private": true,
+  "build": {
+    "appId": "com.bunnysframelab.invoicegenerator",
+    "productName": "Bunnys Invoice Generator",
+    "copyright": "Copyright \u00a9 Bunnys Framelab",
+    "files": [
+      "src/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "asar": true,
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "Bunnys-Invoice-Generator-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.business",
+      "artifactName": "Bunnys-Invoice-Generator-${version}-${arch}.${ext}",
+      "hardenedRuntime": true
+    },
+    "dmg": {
+      "title": "Bunnys Invoice Generator"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uday629/bunnys-invoice-generator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/uday629/bunnys-invoice-generator/issues"
+  }
+}
