@@ -1,6 +1,9 @@
 name: Release
 on:
-  push: { tags: ["v*"] }
+  push:
+    tags: ["v*"]
+    branches: [main]
+    paths: ["package.json", "src/**", "build/**", ".github/workflows/release.yml"]
   workflow_dispatch:
 permissions: { contents: read }
 jobs:
@@ -31,14 +34,18 @@ jobs:
           if-no-files-found: error
   publish:
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions: { contents: write }
     steps:
       - uses: actions/download-artifact@v4
         with: { path: out, merge-multiple: true }
-      - name: Create GitHub release
+      - uses: actions/checkout@v4
+        with: { sparse-checkout: package.json, sparse-checkout-cone-mode: false, path: src-meta }
+      - name: Create GitHub release (once per version)
         env: { GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
         run: |
+          VER="v$(node -p "require('./src-meta/package.json').version")"
+          if gh release view "$VER" --repo "${{ github.repository }}" >/dev/null 2>&1; then echo "Release $VER already exists - skipping"; exit 0; fi
           sha256sum out/* > out/SHA256SUMS.txt
-          gh release create "${{ github.ref_name }}" out/* --repo "${{ github.repository }}" --title "Bunnys Invoice Generator ${{ github.ref_name }}" --generate-notes
+          gh release create "$VER" out/* --repo "${{ github.repository }}" --target "${{ github.sha }}" --title "Bunnys Invoice Generator $VER" --generate-notes
