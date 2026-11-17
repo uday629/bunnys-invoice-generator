@@ -6,46 +6,54 @@ on:
     paths: ["package.json", "src/**", "build/**", ".github/workflows/release.yml"]
   workflow_dispatch:
 permissions: { contents: read }
+
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix: { os: [windows-latest, macos-latest] }
-    runs-on: ${{ matrix.os }}
+  build-win:
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npm test
-      - name: Build Windows installer
-        if: runner.os == 'Windows'
-        run: npx electron-builder --win --x64 --publish never
-      - name: Build macOS dmg (arm64 + x64)
-        if: runner.os == 'macOS'
-        run: npx electron-builder --mac --publish never
+      - run: npx electron-builder --win --x64 --publish never
+      - uses: actions/upload-artifact@v4
+        with: { name: installer-windows, path: dist/*.exe, if-no-files-found: error }
+
+  build-mac:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm test
+      - run: npx electron-builder --mac --publish never
         env: { CSC_IDENTITY_AUTO_DISCOVERY: "false" }
       - uses: actions/upload-artifact@v4
-        with:
-          name: installer-${{ matrix.os }}
-          path: |
-            dist/*.exe
-            dist/*.dmg
-          if-no-files-found: error
-  publish:
-    needs: build
-    if: github.event_name != 'pull_request'
+        with: { name: installer-macos, path: dist/*.dmg, if-no-files-found: error }
+
+  publish-win:
+    needs: build-win
     runs-on: ubuntu-latest
     permissions: { contents: write }
     steps:
-      - uses: actions/download-artifact@v4
-        with: { path: out, merge-multiple: true }
       - uses: actions/checkout@v4
-        with: { sparse-checkout: package.json, sparse-checkout-cone-mode: false, path: src-meta }
-      - name: Create GitHub release (once per version)
-        env: { GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
-        run: |
-          VER="v$(node -p "require('./src-meta/package.json').version")"
-          if gh release view "$VER" --repo "${{ github.repository }}" >/dev/null 2>&1; then echo "Release $VER already exists - skipping"; exit 0; fi
-          sha256sum out/* > out/SHA256SUMS.txt
-          gh release create "$VER" out/* --repo "${{ github.repository }}" --target "${{ github.sha }}" --title "Bunnys Invoice Generator $VER" --generate-notes
+      - uses: actions/download-artifact@v4
+        with: { name: installer-windows, path: out }
+      - name: Publish release assets
+        env: { GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}", REPO: "${{ github.repository }}", SHA: "${{ github.sha }}" }
+        run: bash .github/scripts/publish.sh
+
+  publish-mac:
+    needs: build-mac
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: installer-macos, path: out }
+      - name: Publish release assets
+        env: { GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}", REPO: "${{ github.repository }}", SHA: "${{ github.sha }}" }
+        run: bash .github/scripts/publish.sh
