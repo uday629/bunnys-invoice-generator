@@ -13,6 +13,18 @@
     KES: 'KSh', EGP: 'E£', CHF: 'CHF', SEK: 'kr', NOK: 'kr', DKK: 'kr', NZD: 'NZ$', QAR: '﷼', KWD: 'KD',
   };
 
+  const BUILTIN = Object.assign({}, CURRENCIES);
+  let customCodes = [];
+  /** Replace the user's custom currencies: [{code, symbol, decimals}] */
+  function setCustom(list) {
+    customCodes.forEach((c) => { delete CURRENCIES[c]; ZERO_DECIMAL.delete(c); });
+    customCodes = [];
+    (Array.isArray(list) ? list : []).forEach((c) => {
+      if (!c || BUILTIN[c.code]) return;
+      CURRENCIES[c.code] = c.symbol; customCodes.push(c.code);
+      if (Number(c.decimals) === 0) ZERO_DECIMAL.add(c.code);
+    });
+  }
   const decimals = (cur) => (ZERO_DECIMAL.has(cur) ? 0 : 2);
   const num = (v) => {
     const n = typeof v === 'number' ? v : parseFloat(v);
@@ -86,5 +98,5 @@
     return t.paid > 0 ? 'partial' : 'sent';
   }
 
-  return { CURRENCIES, decimals, round, num, compute, format, status };
+  return { CURRENCIES, BUILTIN_CODES: Object.keys(BUILTIN), setCustom, decimals, round, num, compute, format, status };
 });

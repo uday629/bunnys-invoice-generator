@@ -35,7 +35,7 @@
     return v;
   };
   const currency = (v) => {
-    v = str(v, 3, 'Currency', { required: true });
+    v = str(v, 5, 'Currency', { required: true });
     if (!Calc.CURRENCIES[v]) fail('Unsupported currency');
     return v;
   };
@@ -112,8 +112,22 @@
   function settings(s) {
     s = s && typeof s === 'object' ? s : fail('Invalid settings');
     const b = s.business && typeof s.business === 'object' ? s.business : {};
+    const customRaw = Array.isArray(s.customCurrencies) ? s.customCurrencies : [];
+    if (customRaw.length > 10) fail('Too many custom currencies (max 10)');
+    const seen = new Set();
+    const custom = customRaw.map((c) => {
+      c = c && typeof c === 'object' ? c : fail('Invalid custom currency');
+      const code = str(c.code, 5, 'Currency code', { required: true }).toUpperCase();
+      if (!/^[A-Z]{2,5}$/.test(code)) fail('Currency code must be 2-5 letters (A-Z)');
+      if (Calc.BUILTIN_CODES.includes(code)) fail(`${code} is already built in`);
+      if (seen.has(code)) fail(`${code} is duplicated`);
+      seen.add(code);
+      return { code, symbol: str(c.symbol, 6, 'Currency symbol', { required: true }), decimals: Number(c.decimals) === 0 ? 0 : 2 };
+    });
+    Calc.setCustom(custom);
     return {
-      language: s.language === 'bn' ? 'bn' : 'en',
+      language: 'en',
+      customCurrencies: custom,
       currency: currency(s.currency || 'BDT'),
       business: {
         name: str(b.name, 120, 'Business name'),

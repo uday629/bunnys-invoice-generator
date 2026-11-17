@@ -11,7 +11,7 @@ const Calc = require('../shared/calc');
 const DEFAULTS = () => ({
   v: 1,
   settings: {
-    language: 'en', currency: 'BDT',
+    language: 'en', currency: 'BDT', customCurrencies: [],
     business: { name: '', email: '', phone: '', address: '', taxId: '', website: '', logo: '' },
     numberPrefix: 'INV-', nextNumber: 1, defaultTaxRate: 0, defaultDueDays: 14,
     defaultNotes: 'Thank you for your business!', defaultTerms: 'Payment is due by the due date shown above.',
@@ -54,6 +54,7 @@ class Store {
         const d = this._decode(fs.readFileSync(f));
         this.data = Object.assign(DEFAULTS(), d);
         this.data.settings = Object.assign(DEFAULTS().settings, d.settings);
+        Calc.setCustom(this.data.settings.customCurrencies);
         return;
       } catch (e) { /* try backup */ }
     }

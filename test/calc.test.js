@@ -14,3 +14,12 @@ test('rejects bad input', () => {
 });
 test('mass assignment stripped', () => { const i = good(); i.isAdmin = true; i.totals = { total: 1 }; const o = V.invoice(i); assert.equal(o.isAdmin, undefined); assert.equal(o.totals, undefined); });
 test('logo must be image data URL', () => { const s = { business: { logo: 'javascript:alert(1)' } }; assert.throws(() => V.settings(s)); assert.throws(() => V.settings({ business: { logo: 'data:image/svg+xml;base64,AAAA' } })); });
+test('custom currency: register, format, validate, replace', () => {
+  const s = (c, cur) => ({ business: {}, currency: cur, customCurrencies: c });
+  const out = V.settings(s([{ code: 'xyz', symbol: 'Z$', decimals: 0 }], 'XYZ'));
+  assert.equal(out.currency, 'XYZ'); assert.equal(Calc.format(1234.6, 'XYZ'), 'Z$ 1,235'); assert.equal(Calc.decimals('XYZ'), 0);
+  assert.throws(() => V.settings(s([{ code: 'USD', symbol: '$' }], 'USD')), V.ValidationError);
+  assert.throws(() => V.settings(s([{ code: 'A1', symbol: '$' }], 'BDT')), V.ValidationError);
+  assert.throws(() => V.settings(s([{ code: 'QQQ', symbol: '<script>' + 'x'.repeat(9) }], 'BDT')), V.ValidationError);
+  V.settings(s([], 'BDT')); assert.equal(Calc.CURRENCIES.XYZ, undefined);
+});

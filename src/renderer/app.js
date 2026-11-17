@@ -4,12 +4,12 @@ const { Calc, I18N } = window;
 const api = window.api;
 const root = document.getElementById('app');
 const S = { settings: null, clients: [], invoices: [], view: 'dashboard', param: null, info: {}, dirty: false, filter: { q: '', st: 'all' }, cq: '' };
-const t = (k) => I18N.T(S.settings ? S.settings.language : 'en', k);
-const locale = () => (S.settings && S.settings.language === 'bn' ? 'bn-BD' : 'en-US');
+const t = (k) => I18N.T('en', k);
+const locale = () => 'en-US';
 const money = (n, c) => Calc.format(n, c || S.settings.currency, locale());
 const today = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
 const addDays = (iso, n) => { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
-const fdate = (iso) => { try { return new Date(iso + 'T00:00:00').toLocaleDateString(locale() === 'bn-BD' ? 'bn-BD' : 'en-GB', { year: 'numeric', month: 'short', day: 'numeric' }); } catch (_) { return iso; } };
+const fdate = (iso) => { try { return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' }); } catch (_) { return iso; } };
 
 /* Safe DOM builder: text is always a text node, never HTML. */
 function h(tag, attrs, ...kids) {
@@ -35,7 +35,7 @@ const icon = (n) => { const s = document.createElementNS('http://www.w3.org/2000
 
 function toast(msg, kind) { const el = h('div', { class: 'toast ' + (kind || '') }, msg); document.getElementById('toasts').append(el); setTimeout(() => el.remove(), 3500); }
 async function call(p, okMsg) { const r = await p; if (!r.ok) { toast(r.error || t('failed'), 'err'); throw new Error('handled'); } if (okMsg) toast(okMsg, 'ok'); return r.data; }
-async function reload() { S.__ = await call(api.getState()); S.settings = S.__.settings; S.clients = S.__.clients; S.invoices = S.__.invoices; }
+async function reload() { S.__ = await call(api.getState()); S.settings = S.__.settings; Calc.setCustom(S.settings.customCurrencies || []); S.clients = S.__.clients; S.invoices = S.__.invoices; }
 
 function modal(title, body, { wide, actions } = {}) {
   const prev = document.activeElement;
@@ -59,7 +59,6 @@ function go(view, param) {
 }
 const VIEWS = { dashboard, invoices, editor, detail, clients, settings, about };
 function render() {
-  document.documentElement.lang = S.settings.language;
   const main = h('main', { class: 'main', tabindex: '-1' }, VIEWS[S.view]());
   const nav = (id) => h('button', { class: 'nav' + ((S.view === id || (id === 'invoices' && (S.view === 'editor' || S.view === 'detail'))) ? ' on' : ''), onclick: () => go(id), 'aria-current': S.view === id ? 'page' : null }, icon(id), h('span', {}, t(id)));
   root.replaceChildren(h('aside', { class: 'side' },
@@ -224,15 +223,29 @@ function settings() {
     const r = new FileReader(); r.onload = () => { if (/^data:image\/(png|jpeg|webp);base64,/.test(r.result)) { b.logo = r.result; drawLogo(); } else toast('PNG / JPG / WebP only', 'err'); }; r.readAsDataURL(f); } });
   const o = (k, obj = s, extra = {}) => inp(obj[k], { ...extra, on: (e) => { obj[k] = e.target.value; } });
   const sel = (k, opts) => h('select', { onchange: (e) => { s[k] = e.target.value; } }, opts.map(([v, l]) => h('option', { value: v, selected: s[k] === v }, l)));
+  const curSel = h('select', { 'aria-label': t('currency'), id: 'defcur', onchange: (e) => { s.currency = e.target.value; } });
+  const fillCur = () => { const known = Object.assign({}, ...s.customCurrencies.map((c) => ({ [c.code]: c.symbol })), Object.fromEntries(Calc.BUILTIN_CODES.map((c) => [c, Calc.CURRENCIES[c]])));
+    curSel.replaceChildren(...[...Calc.BUILTIN_CODES, ...s.customCurrencies.map((c) => c.code)].map((c) => h('option', { value: c, selected: s.currency === c }, c + ' ' + known[c]))); };
+  const cList = h('div', {}); const cc = { code: '', symbol: '', decimals: '2' };
+  const drawCustom = () => { fillCur(); cList.replaceChildren(...s.customCurrencies.map((c, n) => h('div', { style: 'display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)' }, h('span', {}, h('b', {}, c.code), '  ' + c.symbol + '  ·  ' + c.decimals + ' decimals'), h('button', { class: 'btn sm danger', 'aria-label': t('remove'), onclick: () => { if (s.currency === c.code) s.currency = 'BDT'; s.customCurrencies.splice(n, 1); drawCustom(); } }, '✕')))); };
+  const ccCode = inp('', { max: 5, ph: 'e.g. QAR' }); const ccSym = inp('', { max: 6, ph: 'e.g. QR' });
+  const ccDec = h('select', { 'aria-label': 'Decimals' }, h('option', { value: '2' }, '2 decimals'), h('option', { value: '0' }, '0 decimals'));
+  const addCustom = () => { const code = ccCode.value.trim().toUpperCase(); const symbol = ccSym.value.trim();
+    if (!/^[A-Z]{2,5}$/.test(code)) return toast('Code must be 2-5 letters', 'err'); if (!symbol) return toast('Enter a symbol', 'err');
+    if (Calc.BUILTIN_CODES.includes(code) || s.customCurrencies.some((c) => c.code === code)) return toast(code + ' already exists', 'err'); if (s.customCurrencies.length >= 10) return toast('Max 10 custom currencies', 'err');
+    s.customCurrencies.push({ code, symbol, decimals: Number(ccDec.value) }); ccCode.value = ''; ccSym.value = ''; drawCustom(); };
+  s.customCurrencies = s.customCurrencies || [];
   const save = async () => { try { s.nextNumber = parseInt(s.nextNumber, 10) || 1; s.defaultTaxRate = parseFloat(s.defaultTaxRate) || 0; s.defaultDueDays = parseInt(s.defaultDueDays, 10) || 0; await call(api.saveSettings(s), t('saved')); await reload(); render(); } catch (e) { if (e.message !== 'handled') throw e; } };
+  drawCustom();
   return h('div', {}, head(t('settings'), h('button', { class: 'btn primary', onclick: save }, t('save'))),
     h('div', { class: 'grid g2' },
       h('div', { class: 'card' }, h('h2', {}, t('business')), field(t('business_name'), o('name', b, { max: 120 })), h('div', { class: 'row2' }, field(t('email'), o('email', b, { type: 'email', max: 254 })), field(t('phone'), o('phone', b, { max: 40 }))),
         field(t('address'), h('textarea', { maxlength: 400, oninput: (e) => { b.address = e.target.value; } }, b.address)), h('div', { class: 'row2' }, field(t('website'), o('website', b, { max: 200 })), field(t('tax_id'), o('taxId', b, { max: 60 }))),
         h('div', { class: 'field' }, h('label', {}, t('logo')), logoPrev, h('div', { class: 'chips' }, h('button', { class: 'btn sm', onclick: () => file.click() }, t('choose_logo')), h('button', { class: 'btn sm', onclick: () => { b.logo = ''; drawLogo(); } }, t('remove')), file))),
-      h('div', { class: 'card' }, h('h2', {}, t('invoices')), h('div', { class: 'row2' }, field(t('language'), sel('language', [['en', 'English'], ['bn', 'বাংলা']])), field(t('currency'), sel('currency', Object.keys(Calc.CURRENCIES).map((c) => [c, c + ' ' + Calc.CURRENCIES[c]])))),
+      h('div', { class: 'card' }, h('h2', {}, t('invoices')), field(t('currency'), curSel, 'defcur'),
         h('div', { class: 'row2' }, field(t('prefix'), o('numberPrefix', s, { max: 12 })), field(t('next_number'), o('nextNumber', s, { type: 'number', min: 1 }))),
         h('div', { class: 'row3' }, field(t('default_tax'), o('defaultTaxRate', s, { type: 'number', min: 0, step: 'any' })), field(t('due_days'), o('defaultDueDays', s, { type: 'number', min: 0 })), field(t('template'), sel('template', [['modern', t('theme_modern')], ['classic', t('theme_classic')], ['minimal', t('theme_minimal')]]))),
+        h('div', { class: 'field' }, h('label', {}, 'Custom currencies (your own code + symbol)'), cList, h('div', { class: 'row4', style: 'align-items:end;margin-top:8px' }, field('Code', ccCode), field('Symbol', ccSym), field('Decimals', ccDec), h('div', { class: 'field' }, h('button', { class: 'btn sm', onclick: addCustom }, '+ Add')))),
         field(t('payment_details'), h('textarea', { maxlength: 1000, oninput: (e) => { s.paymentDetails = e.target.value; } }, s.paymentDetails)),
         field(t('default_notes'), h('textarea', { maxlength: 2000, oninput: (e) => { s.defaultNotes = e.target.value; } }, s.defaultNotes)), field(t('default_terms'), h('textarea', { maxlength: 2000, oninput: (e) => { s.defaultTerms = e.target.value; } }, s.defaultTerms)))),
     h('div', { class: 'grid g2', style: 'margin-top:16px' },
@@ -250,7 +263,7 @@ function about() {
 /* ---------- Boot ---------- */
 (async () => {
   root.append(h('div', { class: 'main' }, h('div', { class: 'skeleton' })));
-  try { S.info = (await api.info()).data || {}; document.documentElement.classList.toggle('mac', S.info.platform === 'darwin'); document.body.classList.toggle('mac', S.info.platform === 'darwin'); await reload(); document.documentElement.lang = S.settings.language; render(); } catch (_) { root.replaceChildren(h('div', { class: 'main' }, 'Failed to load.')); }
+  try { S.info = (await api.info()).data || {}; document.documentElement.classList.toggle('mac', S.info.platform === 'darwin'); document.body.classList.toggle('mac', S.info.platform === 'darwin'); await reload(); render(); } catch (_) { root.replaceChildren(h('div', { class: 'main' }, 'Failed to load.')); }
   window.addEventListener('beforeunload', (e) => { if (S.dirty) { e.preventDefault(); e.returnValue = ''; } });
 })();
 })();

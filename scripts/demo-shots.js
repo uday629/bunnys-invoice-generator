@@ -35,9 +35,9 @@ const path = require('path'); const fs = require('fs'); const os = require('os')
   // verify real PDF generation in the main process
   const pdf = await app.evaluate(async ({ BrowserWindow }, dir) => {
     const path = process.getBuiltinModule('node:path'); const req = process.getBuiltinModule('node:module').createRequire(path.join(dir, 'x.js')); const { renderInvoice } = req('./src/main/render-invoice.js');
-    const inv = { number: 'T-1', status: 'sent', issueDate: '2026-01-01', dueDate: '2026-01-15', currency: 'BDT', client: { name: 'বাংলা Test' }, items: [{ description: 'আইটেম', qty: 1, price: 100, taxRate: 0 }], discount: { type: 'fixed', value: 0 }, shipping: 0, payments: [], template: 'modern', notes: '', terms: '' };
+    const inv = { number: 'T-1', status: 'sent', issueDate: '2026-01-01', dueDate: '2026-01-15', currency: 'BDT', client: { name: 'বাংলা 日本語 Ünï Test' }, items: [{ description: 'any-language text', qty: 1, price: 100, taxRate: 0 }], discount: { type: 'fixed', value: 0 }, shipping: 0, payments: [], template: 'modern', notes: '', terms: '' };
     const win = new BrowserWindow({ show: false, webPreferences: { sandbox: true, javascript: false } });
-    await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(renderInvoice(inv, { language: 'bn', business: { name: 'B', logo: '' }, paymentDetails: '' })));
+    await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(renderInvoice(inv, { language: 'en', business: { name: 'B', logo: '' }, paymentDetails: '' })));
     const b = await win.webContents.printToPDF({ pageSize: 'A4', printBackground: true }); win.destroy(); return b.toString('base64');
   }, path.join(__dirname, '..'));
   const buf = Buffer.from(pdf, 'base64'); fs.writeFileSync(path.join(ud, 't.pdf'), buf);

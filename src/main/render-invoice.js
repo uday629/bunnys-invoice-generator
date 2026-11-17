@@ -7,16 +7,16 @@ const esc = (s) => String(s === undefined || s === null ? '' : s).replace(/[&<>"
 const nl = (s) => esc(s).replace(/\n/g, '<br>');
 const fmtDate = (d, lang) => {
   if (!d) return '';
-  try { return new Date(d + 'T00:00:00').toLocaleDateString(lang === 'bn' ? 'bn-BD' : 'en-GB', { year: 'numeric', month: 'short', day: 'numeric' }); } catch (_) { return d; }
+  try { return new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' }); } catch (_) { return d; }
 };
 
 function renderInvoice(inv, settings) {
-  const lang = settings.language;
+  const lang = 'en';
   const t = (k) => T(lang, k);
   const biz = settings.business;
   const tot = Calc.compute(inv);
   const st = Calc.status(inv);
-  const money = (n) => esc(Calc.format(n, inv.currency, lang === 'bn' ? 'bn-BD' : 'en-US'));
+  const money = (n) => esc(Calc.format(n, inv.currency, 'en-US'));
   const showTax = inv.items.some((i) => i.taxRate > 0);
   const rows = inv.items.map((it, n) => {
     const amt = Calc.round(it.qty * it.price, Calc.decimals(inv.currency));
@@ -27,7 +27,7 @@ function renderInvoice(inv, settings) {
 
   const css = `
   *{box-sizing:border-box}html,body{margin:0;padding:0}
-  body{font-family:"Segoe UI",-apple-system,"SF Pro Text","Helvetica Neue","Nirmala UI","Bangla Sangam MN",Arial,sans-serif;color:#15151c;font-size:12.5px;line-height:1.5;background:#fff}
+  body{font-family:"Segoe UI",-apple-system,"SF Pro Text","Helvetica Neue",Arial,"Nirmala UI","Bangla Sangam MN","Microsoft YaHei","Yu Gothic","Malgun Gothic","PingFang SC","Hiragino Sans","Noto Sans","Arial Unicode MS",sans-serif;color:#15151c;font-size:12.5px;line-height:1.5;background:#fff}
   .page{padding:40px 44px;position:relative;min-height:100vh}
   .bar{height:7px;background:linear-gradient(90deg,#1F6BFF,#6A2BFF,#FF1F56,#FF8A00);border-radius:4px;margin-bottom:26px}
   .top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}

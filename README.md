@@ -5,7 +5,7 @@
 # Bunnys Invoice Generator
 
 **Secure, offline, beautiful invoices for freelancers, small businesses and big teams.**<br>
-Windows &amp; macOS · One-click install · English + বাংলা · 37 currencies
+Windows &amp; macOS · One-click install · English interface · 37+ currencies + your own
 
 [![Download](https://img.shields.io/badge/⬇_Download-Latest_Release-1F6BFF?style=for-the-badge)](../../releases/latest)
 [![Offline](https://img.shields.io/badge/100%25-Offline-FF8A00?style=for-the-badge)](#-security--privacy)
@@ -37,7 +37,7 @@ Bunnys Invoice Generator is built by **Bunnys Framelab** — a creative studio f
 ## 🧭 How it works
 | # | Step | What you do |
 |---|---|---|
-| 1 | **Set up once** | *Settings →* add business name, logo, currency (default BDT ৳), tax %, payment details, invoice prefix. |
+| 1 | **Set up once** | *Settings →* add business name, logo, currency (default BDT ৳, or add your own custom currency), tax %, payment details, invoice prefix. |
 | 2 | **Add clients** | *Clients →* save people once and pick them on any invoice. |
 | 3 | **Create invoice** | *Invoices → New invoice.* Add line items, per-line tax, discount (fixed/%) and shipping. Totals update live. Pick **Modern / Classic / Minimal**. |
 | 4 | **Send & track** | Save as *Sent*, **Export PDF** (A4) or **Print**. *Record payment* — status moves to **Partial / Paid**, and **Overdue** is detected automatically. |
@@ -47,9 +47,9 @@ Bunnys Invoice Generator is built by **Bunnys Framelab** — a creative studio f
 - Unlimited invoices & clients, search & status filter, duplicate, void
 - Partial payments, automatic Paid / Partial / Overdue status
 - Dashboard: total invoiced, collected, outstanding, overdue, 6-month chart (multi-currency aware)
-- 3 print-ready PDF templates with your logo; Bangla PDF supported
-- English / বাংলা interface and invoice language
-- 37 currencies with correct decimals (e.g. JPY has none); exact rounding (no floating-point drift)
+- 3 print-ready PDF templates with your logo
+- Interface and invoices are in **English**; company, client and item names can be written in **any language** (Bangla, Arabic, Hindi, Chinese, …)
+- 37 built-in currencies **plus your own custom currency** (code + symbol + decimals) in *Settings*; correct decimals and exact rounding (no floating-point drift)
 - JSON backup/restore, CSV export, keyboard-accessible UI, reduced-motion support
 
 ## 🔒 Security & privacy

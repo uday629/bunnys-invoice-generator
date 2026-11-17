@@ -12,3 +12,4 @@ out/
 *.bak
 *.tmp
 data.bin
+*.zip

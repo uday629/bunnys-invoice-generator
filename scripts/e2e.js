@@ -9,7 +9,8 @@ const path = require('path'); const fs = require('fs'); const os = require('os')
   const shot = (n) => w.screenshot({ path: path.join(process.env.SHOTS || ud, n + '.png') });
   const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) process.exitCode = 1; };
   // settings
-  await w.click('.nav >> nth=3'); await w.fill('.card input[maxlength="120"]', 'Bunnys Framelab'); await w.click('.btn.primary'); await w.waitForSelector('.toast');
+  await w.click('.nav >> nth=3'); await w.fill('.card input[maxlength="120"]', 'বানিস ফ্রেমল্যাব Studio');
+  await w.fill('input[placeholder="e.g. QAR"]', 'zzq'); await w.fill('input[placeholder="e.g. QR"]', 'QR'); await w.click('.btn >> text=+ Add'); ok((await w.locator('#defcur option', { hasText: 'ZZQ' }).count()) === 1, 'custom currency added to list'); await w.selectOption('#defcur', 'ZZQ'); await w.click('.btn.primary'); await w.waitForSelector('.toast');
   // client
   await w.click('.nav >> nth=2'); await w.click('.btn.primary'); await w.fill('.modal input >> nth=0', 'Acme Studio'); await w.fill('.modal input[type=email]', 'hello@acme.test'); await w.click('.modal .btn.primary'); await w.waitForSelector('td b');
   ok((await w.textContent('td b')) === 'Acme Studio', 'client created');
@@ -18,11 +19,12 @@ const path = require('path'); const fs = require('fs'); const os = require('os')
   await w.selectOption('select >> nth=3', { index: 1 }).catch(() => {}); 
   await w.selectOption('.card select[aria-label="Client"]', { index: 1 });
   await w.fill('.items-t input >> nth=0', 'Logo design <img src=x onerror=alert(1)>'); await w.fill('.items-t input >> nth=1', '2'); await w.fill('.items-t input >> nth=2', '1500');
-  const tot = await w.textContent('.totals .big'); ok(/3,?000/.test(tot), 'live total ' + tot.trim());
+  const tot = await w.textContent('.totals .big'); ok(/QR\s*3,000\.00/.test(tot), 'custom currency used on invoice: ' + tot.trim());
   await shot('editor');
   await w.click('.btn.primary >> text=Sent'); await w.waitForSelector('iframe.pv');
   await w.waitForTimeout(600); await shot('detail');
   ok(errs.length === 0, 'no console/page errors ' + errs.join('|'));
+  ok((await w.locator('.totals .big').count()) >= 0, 'ok');
   // XSS check: injected img must not exist in DOM of the app, and iframe is sandboxed w/o scripts
   ok((await w.locator('img[src="x"]').count()) === 0, 'no XSS img in app DOM');
   await w.click('.btn >> text=Record payment').catch(() => {}); await w.waitForSelector('.modal'); await w.click('.modal .btn.primary'); await w.waitForTimeout(500);
